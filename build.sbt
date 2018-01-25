@@ -17,6 +17,7 @@ lazy val nsc = project
     description := "Compiler plugin to produce .semanticdb files for sbt builds.",
     libraryDependencies ++= List(
       "org.scalameta" %% "langmeta" % scalametaVersion,
+      "org.scalameta" % "semanticdb-scalac-core_2.12.3" % scalametaVersion,
       "org.scala-lang" % "scala-compiler" % scalaVersion.value
     )
   )
@@ -33,7 +34,7 @@ lazy val runtime = project
 val sbtHostScalacOptions =
   settingKey[Seq[String]]("Scalac options required for the sbt host plugin.")
 sbtHostScalacOptions.in(Global) := {
-  val jarname = s"semanticdb-sbt_2.10.6-${version.value}.jar"
+  val jarname = s"semanticdb-sbt_2.12.3-${version.value}.jar"
   // TODO(olafur) avoid getparent()
   val sbthostPlugin = classDirectory.in(nsc, Compile).value.getParentFile / jarname
   val sbthostPluginPath = sbthostPlugin.getAbsolutePath
@@ -60,9 +61,8 @@ lazy val sbtTests = project
   .settings(
     nonPublishableSettings,
     moduleName := "sbthost-sbt-tests",
-    scalaVersion := scala210,
+    scalaVersion := scala212,
     description := "Tests for sbthost that check semantic generation for sbt files.",
-    scriptedSettings,
     scriptedBufferLog := false,
     scriptedLaunchOpts ++= {
       val targetDirectory: File = classDirectory.in(Compile).value
@@ -72,7 +72,7 @@ lazy val sbtTests = project
       Seq(
         "-Xmx1024M",
         "-XX:MaxPermSize=256M",
-        s"-Dsbthost.config=${options.mkString("\007")}"
+        s"-Dsbthost.config=${options.mkString("\u0007")}"
       )
     },
     scripted := scripted.dependsOn(Keys.`package`.in(nsc, Compile)).evaluated
@@ -107,6 +107,10 @@ lazy val tests = project
   .enablePlugins(BuildInfoPlugin)
 
 lazy val mergeSettings = Def.settings(
+  assemblyMergeStrategy.in(assembly) := {
+    case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.discard
+    case _ => MergeStrategy.first
+  },
   test.in(assembly) := {},
   logLevel.in(assembly) := Level.Error,
   assemblyJarName.in(assembly) :=
@@ -117,7 +121,7 @@ lazy val mergeSettings = Def.settings(
     val fatJar =
       new File(crossTarget.value + "/" + assemblyJarName.in(assembly).value)
     val _ = assembly.value
-    IO.copy(List(fatJar -> slimJar), overwrite = true)
+    IO.copy(List(fatJar -> slimJar), overwrite = true, false, false)
     slimJar
   },
   packagedArtifact.in(Compile).in(packageBin) := {
@@ -126,7 +130,7 @@ lazy val mergeSettings = Def.settings(
     val fatJar =
       new File(crossTarget.value + "/" + assemblyJarName.in(assembly).value)
     val _ = assembly.value
-    IO.copy(List(fatJar -> slimJar), overwrite = true)
+    IO.copy(List(fatJar -> slimJar), overwrite = true, false, false)
     (art, slimJar)
   },
   pomPostProcess := { node =>
@@ -146,14 +150,14 @@ lazy val mergeSettings = Def.settings(
   }
 )
 
-lazy val scalametaVersion = "2.0.0-M3"
+lazy val scalametaVersion = "2.1.6-SNAPSHOT"
 lazy val scala210 = "2.10.6"
 lazy val scala211 = "2.11.11"
 lazy val scala212 = "2.12.3"
 
 lazy val isScala210 = Seq(
-  scalaVersion := scala210,
-  crossScalaVersions := List(scala210)
+  scalaVersion := scala212,
+  crossScalaVersions := List(scala212)
 )
 
 lazy val sharedSettings: Seq[Def.Setting[_]] = Seq(
@@ -176,11 +180,11 @@ lazy val nonPublishableSettings: Seq[Def.Setting[_]] = Seq(
 ) ++ sharedSettings
 
 lazy val publishableSettings: Seq[Def.Setting[_]] = Seq(
-  publishTo := {
-    if (customVersion.isDefined)
-      Some("releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2")
-    else publishTo.in(bintray).value
-  },
+//  publishTo := {
+//    if (customVersion.isDefined)
+//      Some("releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2")
+//    else publishTo.in(bintray).value
+//  },
   bintrayOrganization := Some("scalameta"),
   bintrayRepository := "maven",
   publishMavenStyle := true,

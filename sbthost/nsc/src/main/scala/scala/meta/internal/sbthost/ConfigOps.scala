@@ -3,6 +3,7 @@ package scala.meta.internal.sbthost
 import java.io.File
 import java.nio.file.Path
 import java.nio.file.Paths
+import scala.meta.internal.semanticdb.DatabaseOps
 
 case class SbthostConfig(sourceroot: Path, targetroot: Path) {
   def target = targetroot.resolve("META-INF").resolve("semanticdb")

@@ -10,10 +10,12 @@ object SemanticdbSbt {
     case els => els.toString
   }
 
-  private val isSbtDialect = Set("Scala210", "Sbt0137")
+  private val isSbtDialect = Set("Scala212", "Sbt1")
 
   def patchDatabase(db: Database, sourceroot: AbsolutePath): Database = {
-    if (!db.documents.exists(x => isSbtDialect(x.language))) {
+    if (!db.documents.exists { x =>
+      isSbtDialect(x.language)
+    }) {
       // Optimization. Some databases can be quite large and most of dbs
       // from applications like scalafix will not have sbt semanticdbs.
       db
@@ -28,7 +30,7 @@ object SemanticdbSbt {
   }
 
   private def sbtFile(input: Input, doc: List[Document]): Document = {
-    val source = dialects.Sbt0137(input).parse[Source].get
+    val source = dialects.Sbt1(input).parse[Source].get
     val (definitions, exprs) = source.stats.partition(_.is[Defn])
     val tokenMap: Map[Token, (Int, Token)] = {
       val builder = Map.newBuilder[Token, (Int, Token)]
@@ -94,7 +96,7 @@ object SemanticdbSbt {
     }
     val document = Document(
       input = input,
-      language = dialects.Sbt0137.toString(),
+      language = dialects.Sbt1.toString(),
       names = buffer.result(),
       messages = doc.flatMap(_.messages),
       symbols = doc.flatMap(_.symbols),

@@ -77,7 +77,7 @@ class SbtFileTest extends SemanticdbSbtTest(BuildInfo.sbtSourceroot, BuildInfo.s
     "build.sbt",
     """
       |Language:
-      |Sbt0137
+      |Sbt1
       |
       |Names:
       |[4..7): foo => <>.foo.
